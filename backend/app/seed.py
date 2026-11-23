@@ -1,6 +1,12 @@
 from datetime import datetime, timezone
+import hashlib
 
 from app.db import 连接
+
+
+def _业务指纹(卡号, 进站站点键, 出站站点键, 进站事件时, 出站事件时) -> str:
+    料 = "|".join([卡号 or "", 进站站点键 or "", 出站站点键 or "", 进站事件时 or "", 出站事件时 or ""])
+    return "fp-" + hashlib.sha256(料.encode("utf-8")).hexdigest()
 
 建表 = """
 CREATE TABLE IF NOT EXISTS 站规 (
@@ -54,7 +60,8 @@ CREATE TABLE IF NOT EXISTS 行程账 (
   历时秒 INTEGER NOT NULL DEFAULT 0,
   状态 TEXT NOT NULL DEFAULT '已成对',
   版本 INTEGER NOT NULL DEFAULT 1,
-  处理时 TEXT NOT NULL
+  处理时 TEXT NOT NULL,
+  幂等指纹 TEXT NOT NULL DEFAULT ''
 );
 CREATE TABLE IF NOT EXISTS 旁路匣 (
   编号 INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -84,6 +91,7 @@ def 此刻() -> str:
 def 初始化库() -> None:
     conn = 连接()
     conn.executescript(建表)
+    _迁移行程幂等(conn)
     if conn.execute("SELECT COUNT(*) AS c FROM 站规").fetchone()["c"] == 0:
         for k, v in {
             "站名": "闸对",
@@ -105,3 +113,21 @@ def 初始化库() -> None:
             )
     conn.commit()
     conn.close()
+
+
+def _迁移行程幂等(conn) -> None:
+    """旧库补 幂等指纹 列并回填，再建唯一索引（行程账唯一约束的最终防线）。"""
+    cols = {r["name"] for r in conn.execute("PRAGMA table_info(行程账)")}
+    if "幂等指纹" not in cols:
+        conn.execute("ALTER TABLE 行程账 ADD COLUMN 幂等指纹 TEXT NOT NULL DEFAULT ''")
+    行 = conn.execute(
+        "SELECT 行程键,卡号,进站站点键,出站站点键,进站事件时,出站事件时,幂等指纹 FROM 行程账"
+    ).fetchall()
+    for r in 行:
+        if not r["幂等指纹"]:
+            fp = _业务指纹(r["卡号"], r["进站站点键"], r["出站站点键"], r["进站事件时"], r["出站事件时"])
+            conn.execute("UPDATE 行程账 SET 幂等指纹=? WHERE 行程键=?", (fp, r["行程键"]))
+    conn.execute(
+        "CREATE UNIQUE INDEX IF NOT EXISTS 行程账_幂等指纹_唯一 ON 行程账(幂等指纹)"
+    )
+    conn.commit()

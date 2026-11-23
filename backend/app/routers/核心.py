@@ -4,6 +4,7 @@ from pydantic import BaseModel, Field
 
 from app.db import 夹具目录, 连接
 from app.services import 装载, 贯验, 目录
+from app.modules import 行程键幂等
 
 路由 = APIRouter(prefix="/api")
 
@@ -89,6 +90,51 @@ def 列行程():
     conn = 连接()
     try:
         return [dict(r) for r in conn.execute("SELECT * FROM 行程账 ORDER BY 处理时 DESC LIMIT 200")]
+    finally:
+        conn.close()
+
+
+@路由.get("/行程幂等/探测")
+def 探测行程幂等(
+    进站事件编号: str = "",
+    出站事件编号: str = "",
+    卡号: str = "",
+    进站站点键: str = "",
+    出站站点键: str = "",
+    进站事件时: str = "",
+    出站事件时: str = "",
+):
+    """行程幂等只读接口：探测键、命中行程或跳过、幽灵行程计数、valid。
+
+    两种探测方式：
+    - 进站事件编号+出站事件编号（行程键对）
+    - 卡号+进出站点+进出事件时（进出业务对，口径乙，与事件编号解耦）
+    """
+    业务 = {
+        "卡号": 卡号,
+        "进站站点键": 进站站点键,
+        "出站站点键": 出站站点键,
+        "进站事件时": 进站事件时,
+        "出站事件时": 出站事件时,
+    }
+    conn = 连接()
+    try:
+        return 行程键幂等.探测行程(
+            conn,
+            进站事件编号=进站事件编号,
+            出站事件编号=出站事件编号,
+            业务=业务,
+        )
+    finally:
+        conn.close()
+
+
+@路由.get("/行程幂等/态")
+def 行程幂等态():
+    """只读总览：口径、幂等拦截数、幽灵行程计数、重复指纹组、valid。"""
+    conn = 连接()
+    try:
+        return 行程键幂等.幂等态(conn)
     finally:
         conn.close()
 

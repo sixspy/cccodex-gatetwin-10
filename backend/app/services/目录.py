@@ -1,4 +1,5 @@
 from app.db import 连接
+from app.modules import 行程键幂等
 
 
 def 总览() -> dict:
@@ -10,6 +11,7 @@ def 总览() -> dict:
         末 = conn.execute(
             "SELECT * FROM 行程贯验 ORDER BY 编号 DESC LIMIT 1"
         ).fetchone()
+        态 = 行程键幂等.幂等态(conn)
         return {
             "站点": c("SELECT COUNT(*) FROM 站点"),
             "刷卡点": c("SELECT COUNT(*) FROM 刷卡点"),
@@ -20,6 +22,10 @@ def 总览() -> dict:
             "行程数": c("SELECT COUNT(*) FROM 行程账 WHERE 状态='已成对'"),
             "旁路匣": c("SELECT COUNT(*) FROM 旁路匣"),
             "装载批次": c("SELECT COUNT(*) FROM 装载批次"),
+            "幂等口径": 态["口径"],
+            "幂等拦截数": 态["幂等拦截数"],
+            "幽灵行程计数": 态["幽灵行程计数"],
+            "幂等valid": 态["valid"],
             "末次贯验": dict(末) if 末 else None,
         }
     finally:

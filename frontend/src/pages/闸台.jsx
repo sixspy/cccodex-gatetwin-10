@@ -24,7 +24,9 @@ export default function 闸台() {
       </div>
       <div className="提示条">
         冒烟：<Link to="/刷卡流">刷卡流</Link> 依次推成对 / 缺腿超时 / 出站孤儿 → 看开腿账与行程账 →{" "}
-        <Link to="/行程贯验">行程贯验</Link>。
+        <Link to="/行程贯验">行程贯验</Link>。行程幂等探测见 <Link to="/行程幂等">行程幂等</Link>
+        （口径：{数.幂等口径 || "—"}，幽灵 {数.幽灵行程计数 ?? 0}，
+        <span className={`徽章 ${数.幂等valid ? "通" : "败"}`}>{数.幂等valid ? "valid" : "破裂"}</span>）。
       </div>
       <div className="行"><button className="次" onClick={刷}>刷新台面</button></div>
       {末 ? (

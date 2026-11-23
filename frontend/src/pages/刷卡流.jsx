@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { 取, 递 } from "../api.js";
 
-const 夹具 = ["成对样例", "缺腿超时样例", "出站孤儿样例", "重复进站样例"];
+const 夹具 = ["成对样例", "缺腿超时样例", "出站孤儿样例", "重复进站样例", "幂等重放样例"];
 
 export default function 刷卡流() {
   const [行, 设行] = useState([]);
@@ -12,7 +12,7 @@ export default function 刷卡流() {
     设讯("装载中…");
     try {
       const r = await 递(`/装载/夹具?名=${encodeURIComponent(名)}`);
-      设讯(`批次 ${r.批次编号}：入流${r.入流} 开腿${r.开腿} 成对${r.成对} 旁路${r.旁路}`);
+      设讯(`批次 ${r.批次编号}：入流${r.入流} 开腿${r.开腿} 成对${r.成对} 旁路${r.旁路} 事件跳过${r.事件幂等跳过 ?? 0} 行程跳过${r.行程幂等跳过 ?? 0}`);
       await 刷();
     } catch (e) {
       设讯(String(e.message || e));

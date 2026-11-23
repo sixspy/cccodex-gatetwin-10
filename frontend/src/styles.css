@@ -60,6 +60,12 @@ button:hover { filter: brightness(1.05) }
 button.次 { background: transparent; border: 1px solid var(--线); color: var(--字); font-weight: 500 }
 button.次.亮片 { border-color: var(--焰); color: var(--焰); background: var(--焰弱) }
 button.水 { background: var(--水); color: #fff }
+input {
+  font: inherit; padding: 0.38rem 0.5rem; border: 1px solid var(--线);
+  border-radius: 4px; background: var(--块); color: var(--字); min-width: 9rem;
+}
+input:focus { outline: 2px solid var(--焰弱); border-color: var(--焰) }
+label.讯 { display: inline-flex; flex-direction: column; gap: 0.25rem; font-size: 0.78rem }
 table { width: 100%; border-collapse: collapse; font-size: 0.85rem; background: var(--块); border: 1px solid var(--线); border-radius: 8px; overflow: hidden }
 th, td { border-bottom: 1px solid var(--线); padding: 0.48rem 0.45rem; text-align: left; vertical-align: top }
 th { color: var(--淡); font-weight: 500; background: var(--块亮) }
